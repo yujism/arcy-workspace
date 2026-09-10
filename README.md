@@ -1,5 +1,15 @@
 # Arcy Workspace
 
+## GitHub Pages edition
+
+Static build files live in `docs/`. To publish, open repository Settings → Pages, select **Deploy from a branch**, branch **main**, folder **/docs**, then Save. The existing **main / (root)** setting also works: the root entry forwards to `docs/`. Expected project URL after GitHub reports a successful deployment: `https://yujism.github.io/arcy-workspace/`.
+
+This edition explicitly offers a **local browser workspace** before storing data. Tasks, notes, calendar and source search use IndexedDB in that browser; no login or server secrets are embedded. Data does not sync between devices and clearing browser storage can remove it. Export/import JSON backups are available. Import merges new IDs without replacing existing items. Google/AI integrations require the separate backend and are disabled on Pages.
+
+Rebuild after source changes with `pnpm install --frozen-lockfile` and `pnpm build:pages`; commit the updated `docs/` along with source. No dependencies were added for the static build. `pages/vite.config.ts` sets relative asset URLs for project Pages and excludes environment-file loading.
+
+The original backend build is retained below. Hosting this repository on Pages does **not** run its API routes or D1 database.
+
 Private personal workspace built with React, Vinext (Next.js App Router compatibility), Sites Workers, and D1/SQLite. The hosted MVP deliberately uses platform-managed storage instead of the proposed external PostgreSQL/pgvector. No vector index is present.
 
 ## Available immediately
