@@ -4,7 +4,7 @@
 
 Static build files live in `docs/`. To publish, open repository Settings → Pages, select **Deploy from a branch**, branch **main**, folder **/docs**, then Save. The existing **main / (root)** setting also works: the root entry forwards to `docs/`. Expected project URL after GitHub reports a successful deployment: `https://yujism.github.io/arcy-workspace/`.
 
-This edition explicitly offers a **local browser workspace** before storing data. Tasks, notes, calendar and source search use IndexedDB in that browser; no login or server secrets are embedded. Data does not sync between devices and clearing browser storage can remove it. Export/import JSON backups are available. Import merges new IDs without replacing existing items. Google/AI integrations require the separate backend and are disabled on Pages.
+This edition explicitly offers a **local browser workspace** before storing data. Tasks, notes, calendar and source search use IndexedDB in that browser; no login or server secrets are embedded. Data does not sync between devices and clearing browser storage can remove it. Export/import JSON backups are available. Import merges new IDs without replacing existing items. Google Drive, Sheets, and Calendar use Google Identity Services directly from Pages after one-time application registration. AI still requires a separate backend. See `GOOGLE_SETUP.md`.
 
 Rebuild after source changes with `pnpm install --frozen-lockfile` and `pnpm build:pages`; commit the updated `docs/` along with source. No dependencies were added for the static build. `pages/vite.config.ts` sets relative asset URLs for project Pages and excludes environment-file loading.
 
@@ -21,7 +21,7 @@ Private personal workspace built with React, Vinext (Next.js App Router compatib
 - Home dashboard with open tasks, overdue count, current-day agenda and recent notes.
 - Per-user server authorization using the Sites authenticated identity; private owner-only publishing.
 
-## Optional provider configuration
+## Optional provider configuration (original Sites backend)
 
 Set runtime secrets through Sites environment settings, never in client-side code or public files. `.env.example` lists the required names. The app does not inherit ChatGPT connector credentials.
 
@@ -51,6 +51,9 @@ Implemented connectors after configuration:
 - API integration checks and compilation run locally; browser QA and credential-dependent Google/AI calls were not run.
 
 ## Checks
+
+`node tests/google-pages.mjs` — mocked Google authorization and API scenarios for the Pages connector; does not prove live OAuth activation.
+
 
 `node node_modules/typescript/bin/tsc --noEmit`
 

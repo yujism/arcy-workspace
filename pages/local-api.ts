@@ -7,6 +7,31 @@ function database(){if(!connection)connection=new Promise<IDBDatabase>((resolve,
 async function transaction<T>(mode:IDBTransactionMode,operation:(store:IDBObjectStore)=>IDBRequest<T>){const db=await database();return new Promise<T>((resolve,reject)=>{const tx=db.transaction('records',mode);const request=operation(tx.objectStore('records'));let result:T;request.onsuccess=()=>{result=request.result};tx.oncomplete=()=>resolve(result);tx.onabort=()=>reject(new Error('Perubahan belum tersimpan. Ruang penyimpanan browser mungkin penuh.'));tx.onerror=()=>reject(new Error('Penyimpanan gagal. Input lu belum dihapus.'));});}
 export async function allRecords(){return (await transaction<RecordItem[]>('readonly',store=>store.getAll())).sort((a,b)=>b.updated.localeCompare(a.updated));}
 async function put(item:RecordItem){schema.parse(item);await transaction('readwrite',store=>store.put(item));}
+// Replace a Calendar snapshot only after every API page succeeded. The transaction
+// keeps existing records intact when capacity, validation, or authorization fails.
+export async function saveGoogleRecords(items:RecordItem[],assertCurrent:()=>void,calendarOwner?:string){
+ for(const item of items)schema.parse(item);
+ const db=await database();assertCurrent();
+ await new Promise<void>((resolve,reject)=>{
+  const tx=db.transaction('records','readwrite'),store=tx.objectStore('records');
+  let failure:unknown;
+  const current=store.getAll();
+  current.onsuccess=()=>{try{
+   assertCurrent();
+   const existing=current.result as RecordItem[];
+   const removed=calendarOwner?existing.filter(r=>r.kind==='event'&&r.meta.source==='Google Calendar'&&r.meta.googleAccount===calendarOwner):[];
+   const removedIds=new Set(removed.map(r=>r.id));
+   const ids=new Set(existing.filter(r=>!removedIds.has(r.id)).map(r=>r.id));
+   for(const item of items)ids.add(item.id);
+   if(ids.size>MAX_RECORDS)throw new Error('Impor melebihi batas 5.000 item. Data sebelumnya tetap ada.');
+   for(const item of removed)store.delete(item.id);
+   for(const item of items)store.put(item);
+  }catch(error){failure=error;tx.abort();}};
+  tx.oncomplete=()=>resolve();
+  tx.onabort=()=>reject(failure||new Error('Impor gagal. Data sebelumnya tetap ada.'));
+  tx.onerror=()=>reject(new Error('Penyimpanan impor gagal.'));
+ });
+}
 export async function localApi(path:string,body?:any,method='POST'){
  if(path==='/api/workspace'){
   if(body===undefined)return {items:await allRecords(),user:{id:'local-browser',name:'Yuji'},connections:{google:false,ai:false},now:new Date().toISOString()};
@@ -26,7 +51,7 @@ export async function localApi(path:string,body?:any,method='POST'){
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
   const all=await allRecords();if(all.length>=MAX_RECORDS)throw new Error('Batas 5.000 item tercapai. Ekspor backup sebelum membersihkan data.');
   const sources=all.filter(x=>x.kind!=='message').map(x=>({x,score:terms.reduce((n:number,t:string)=>n+(x.title.toLowerCase().includes(t)?4:0)+(x.body.toLowerCase().includes(t)?1:0),0)+(brief&&((x.kind==='task'&&x.meta.status!=='done')||(x.kind==='event'&&x.meta.start&&new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date(x.meta.start))===today))?3:0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,8).map(({x},i)=>({id:x.id,number:i+1,title:x.title,excerpt:x.body.slice(0,700),kind:x.kind,meta:x.meta}));
-  const answer=sources.length?'Gua nemuin '+sources.length+' sumber di browser ini. Ini pencarian teks, bukan jawaban model AI.\n\n'+sources.map(s=>`[${s.number}] ${s.title}\n${s.excerpt||JSON.stringify(s.meta)}`).join('\n\n'):'Belum ada sumber yang cocok di browser ini. Tambahkan catatan, task, atau agenda lalu coba lagi. Google dan AI tidak terhubung di versi Pages.';
+  const answer=sources.length?'Gua nemuin '+sources.length+' sumber di browser ini. Ini pencarian teks, bukan jawaban model AI.\n\n'+sources.map(s=>`[${s.number}] ${s.title}\n${s.excerpt||JSON.stringify(s.meta)}`).join('\n\n'):'Belum ada sumber yang cocok di browser ini. Tambahkan catatan, task, atau impor sumber Google lalu coba lagi.';
   const item={id:crypto.randomUUID(),kind:'message',title:question,body:answer,meta:{sources,mode:'search'},updated:new Date().toISOString()};await put(item);return {item};
  }
  throw new Error('Integrasi Google dan AI memerlukan backend. Fitur ini tidak aktif di GitHub Pages.');
