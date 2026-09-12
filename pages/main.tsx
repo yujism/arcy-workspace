@@ -2,6 +2,8 @@ import {useState,useRef,useEffect,useSyncExternalStore} from 'react';
 import {createRoot} from 'react-dom/client';
 import {LoaderCircle,LogOut,RefreshCw,Cloud,Lock} from 'lucide-react';
 import Workspace from '../app/workspace';
+import ThemeToggle from './theme';
+import './theme.css';
 import {exportBackup,importBackup,legacyRecords,importRecords} from './local-api';
 import {DriveWorkspace,activateWorkspace} from './drive-workspace';
 import {pagesApi} from './google-api';
@@ -18,7 +20,7 @@ function Pages(){
  if(google.owner&&google.workspace)return <AccountWorkspace key={google.owner} owner={google.owner}/>;
  const working=google.phase==='loading'||google.phase==='connecting';
  function login(){setError('');connectGoogle('workspace').catch(e=>setError(e.message));}
- return <main className="pages-start"><div className="pages-start-card">
+ return <main className="pages-start"><div className="login-theme"><ThemeToggle/></div><div className="pages-start-card">
   <span className="pages-mark">a</span><p className="eyebrow">ARCY WORKSPACE</p>
   <h1>Satu akun. Workspace lu di mana pun.</h1>
   <p>Masuk dengan akun Google untuk membuka task, catatan, agenda, dan riwayat pencarian lu.</p>
@@ -57,7 +59,7 @@ function AccountWorkspace({owner}:{owner:string}){
  const blocked=busy||sync.writing||google.phase==='connecting';
  const requireIdle=()=>{if(storage.snapshot().writing)throw new Error('Tunggu penyimpanan selesai, lalu coba lagi.');};
  const syncText=sync.phase==='loading'?'Memuat workspace…':sync.phase==='syncing'?'Menyinkronkan…':sync.phase==='error'?'Sinkronisasi belum berhasil':'Tersimpan di Google Drive';
- return <><div className="pages-banner"><div className="pages-account"><strong>{google.email}</strong><span role="status">{syncText}</span></div><div className="pages-backup">
+ return <><div className="pages-banner"><div className="pages-account"><strong>{google.email}</strong><span role="status">{syncText}</span></div><div className="pages-backup"><ThemeToggle/>
   <button disabled={blocked||sync.phase==='syncing'} onClick={()=>storage.refresh().then(()=>setReady(true)).catch(()=>{})}><RefreshCw size={14}/>Sinkronkan</button>
   <button disabled={blocked||!ready} onClick={download}>Export backup</button>
   <button disabled={blocked||!ready} onClick={()=>file.current?.click()}>Import backup</button>

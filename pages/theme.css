@@ -1,0 +1,33 @@
+.login-theme{position:absolute;top:22px;right:24px}.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 13px;border:1px solid #b6cabe;border-radius:7px;min-height:40px;font-size:14px;background:transparent;color:inherit}.theme-toggle:hover{background:#789b811a}.theme-toggle:focus-visible{outline:2px solid #73c89c;outline-offset:3px}
+html[data-theme=dark]{--background:#101916;--foreground:#e1eae5;--card:#18231e;--card-foreground:#e1eae5;--popover:#1c2a23;--popover-foreground:#e1eae5;--muted:#26372d;--muted-foreground:#a6b8ac;--border:#35483b;--input:#3e5345;--ring:#82d8a6;--primary:#8bd6ac;--primary-foreground:#10271a;--secondary:#26372d;--secondary-foreground:#dbe7de;--accent:#304738;--accent-foreground:#ecf5ee;--sidebar:#12201a;--sidebar-foreground:#dbe7de;--sidebar-accent:#2a4435;--sidebar-accent-foreground:#e7f7ed;--destructive:#f19686;color-scheme:dark}
+html[data-theme=dark] :is(.workspace,.pages-start){background:#101916}
+html[data-theme=dark] :is(.pages-start-card,.panel,.stats>button,.note-preview,.note-card,.connection-card,.arcy-dialog,.search-box,.date-picker,.outlined,.welcome-prompts button,.citation-list button){background:#18231e;border-color:#35483b;color:#e1eae5}
+html[data-theme=dark] .topbar{background:#15201a;border-color:#35483b}
+html[data-theme=dark] .ask-card{background:linear-gradient(120deg,#1c3125,#1b2921 65%,#223a29);border-color:#39523f}
+html[data-theme=dark] :is(.composer,.editor-form input,.editor-form textarea,.inline-form input){background:#121e17;border-color:#415443;color:#e1eae5}
+html[data-theme=dark] :is(.composer textarea,.search-box input){color:#e1eae5}
+html[data-theme=dark] :is(input,textarea)::placeholder{color:#97aa9a}
+html[data-theme=dark] :is(.breadcrumb strong,.ask-card h2,.empty-focus h3,.schedule-empty h3,.connection-callout h3,.empty-state h3,.event-time,.answer p,.note-body,.setup-content,.pages-loading){color:#d4e4d7}
+html[data-theme=dark] :is(.page-heading p,.ask-card>p,.stats>button>span,.stats small,.task-main span,.task-main.completed strong,.note-preview small,.note-card p,.note-card footer,.agenda-date,.agenda-date span:first-child,.schedule-empty p,.agenda-footer,.connection-callout p,.quiet-note,.muted,.settings-notes p,.model-panel p,.connection-card p,.empty-state p,.empty-focus p,.chat-welcome>p,.composer-bottom>span,.chat-compose>small,.answer-actions,.answer-label span,.pages-start p,.google-account .google-footnote,.arcy-dialog [data-slot=dialog-description],.editor-form label,.event-time small,.event-info>span,.agenda-item small,.agenda-item span,.workspace-footer,.answer-pending,.private-label,.breadcrumb,.mini-week button){color:#a9bcad}
+html[data-theme=dark] .eyebrow{color:#aec5b3!important}
+html[data-theme=dark] :is(.text-button,.green,.icon-button,.recurring-link,.connection-callout button,.ask-heading,.spark-box,.add-row){color:#a1d4af}
+html[data-theme=dark] :is(.secondary,.prompt-chips button,.subtle-badge,.tag,.connection-status,.count,.priority,.empty-icon,.file-icon,.callout-icon,.large-spark,.top-avatar,.note-preview>svg:first-child,.citation-list button span){background:#26372d;border-color:#435845;color:#c0d6c2}
+html[data-theme=dark] :is(.secondary:hover,.prompt-chips button:hover,.icon-button:hover){background:#344d3b;color:#edfaf1}
+html[data-theme=dark] :is(.primary,.send-button,.mini-week .selected){background:#88d2aa;border-color:#88d2aa;color:#10251a}
+html[data-theme=dark] .primary:hover{background:#a0e5bc}
+html[data-theme=dark] :is(.connection-callout,.agenda-item,.event-detail-time,.setup-content pre,.owner-id,.pages-login-info,.pages-local-info,.pages-migration){background:#213428;border-color:#3d5340;color:#c0d6c4}
+html[data-theme=dark] .pages-login-info p{color:#c0d6c4}
+html[data-theme=dark] .agenda-footer{background:#1b2a20}
+html[data-theme=dark] :is(.task-row,.add-row,.schedule-empty,.agenda-footer,.note-card footer,.calendar-event,.detail-actions,.import-section+.import-section,.drive-results>div){border-color:#35483b}
+html[data-theme=dark] .toolbar [data-slot=tabs-list]{background:#213126}
+html[data-theme=dark] .chat-compose{background:linear-gradient(transparent,#101916 12%)}
+html[data-theme=dark] :is(.error-banner,.pages-status,.google-account .google-setup){background:#382c20;border-color:#795b3c;color:#f0c795}
+html[data-theme=dark] .pages-start-card>p[role=alert]{color:#f3b49f}
+html[data-theme=dark] .priority.high{background:#442e24;color:#f3bf9e}
+html[data-theme=dark] :is(.priority.low,.sheets,.connection-status.ready){background:#244332;color:#b4e3bd}
+html[data-theme=dark] .drive{background:#483c21;color:#f1d38d}
+html[data-theme=dark] .cal{background:#283d58;color:#b9d5ff}
+html[data-theme=dark] .pages-banner{background:#162b21;border-bottom:1px solid #35483b}
+html[data-theme=dark] .google-letter{background:#fff;color:#3569c8}
+html[data-theme=dark] [data-sonner-toast]{background:#213126!important;color:#e1eae5!important;border-color:#435845!important}
+@media(max-width:650px){.pages-start{padding-top:84px}.login-theme{top:18px;right:18px}}
