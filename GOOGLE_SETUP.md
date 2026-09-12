@@ -2,7 +2,7 @@
 
 The Pages app now implements Google's official browser token model. The owner registers the app once; daily users click **Connect Google → choose account → approve permissions**. No password, client secret, API key, refresh token, or credential form is added to Arcy.
 
-**Current status:** code is implemented, but `pages/google-config.json` has no client ID. Until registration is complete the UI explicitly says activation is pending and does not pretend Google is connected. Live authorization has not been tested.
+**Current status:** the owner's public OAuth client ID is configured in `pages/google-config.json` for the GitHub Pages origin below. The owner reports Drive, Sheets, and Calendar APIs enabled. Live authorization still needs to be verified with the intended Google account; a configured client ID alone does not confirm the account's consent or test-user access.
 
 ## One-time owner registration
 
