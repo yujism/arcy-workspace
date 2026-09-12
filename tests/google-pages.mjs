@@ -70,7 +70,11 @@ try{
   await pagesApi('/api/google',{action:'import',id:'doc1'});
   await pagesApi('/api/google',{action:'import',id:'doc1'});
   assert.equal(storage.records.length,1,'reimport updates same record');
-  account.sub='account-b';await authorize();
+  account.sub='account-b';
+  const switched=auth.connectGoogle();const rejectSwitch=assert.rejects(switched,/Akun berbeda/);
+  await oauthOptions.callback({access_token:'other-token',expires_in:3600,scope:readScopes.join(' ')});await rejectSwitch;
+  assert.equal(auth.googleSnapshot().owner,'account-a');
+  auth.signOutGoogle();await authorize();
   await pagesApi('/api/google',{action:'import',id:'doc1'});
   assert.equal(storage.records.length,2,'same Doc imports are isolated by Google account');
   const sheetCalls=[];
@@ -117,3 +121,4 @@ try{
   assert.equal(auth.googleSnapshot().phase,'expired');assert.equal(auth.googleSnapshot().services.drive,false);
   console.log('PASS: missing registration, popup cancellation, denied/partial scopes, memory-only token state, account isolation, Docs reimport, Sheets read, paginated Calendar rollback, idempotent event creation, stale-session rejection, expired-token recovery. Google responses and storage are mocked; live consent remains unverified.');
 }finally{await auth.disconnectGoogle();globalThis.fetch=realFetch;delete globalThis.window;rmSync(temporary,{recursive:true,force:true});}
+

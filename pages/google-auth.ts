@@ -1,8 +1,9 @@
 import config from './google-config.json';
 
 export type GoogleService = 'drive' | 'sheets' | 'calendar';
-export type GooglePermission = GoogleService | 'calendarWrite' | 'all';
+export type GooglePermission = GoogleService | 'calendarWrite' | 'workspace' | 'all';
 const scope = {
+  workspace: 'https://www.googleapis.com/auth/drive.appdata',
   drive: 'https://www.googleapis.com/auth/drive.readonly',
   sheets: 'https://www.googleapis.com/auth/spreadsheets.readonly',
   calendar: 'https://www.googleapis.com/auth/calendar.events.readonly',
@@ -20,11 +21,11 @@ type OAuth = {
 declare global {interface Window {google?: {accounts?: {oauth2?: OAuth}}}}
 export type GoogleState = {
   phase: 'loading' | 'setup' | 'ready' | 'connecting' | 'connected' | 'expired' | 'error';
-  email: string; error: string; revision: number;
+  email: string; owner: string; workspace: boolean; error: string; revision: number;
   services: Record<GoogleService, boolean>;
 };
 const emptyServices = () => ({drive: false, sheets: false, calendar: false});
-let state: GoogleState = {phase: 'loading', email: '', error: '', revision: 0, services: emptyServices()};
+let state: GoogleState = {phase: 'loading', email: '', owner: '', workspace: false, error: '', revision: 0, services: emptyServices()};
 let token: {value: string; owner: string; expires: number; scopes: Set<string>} | undefined;
 let generation = 0;
 let expiry: ReturnType<typeof setTimeout> | undefined;
@@ -36,7 +37,7 @@ export function subscribeGoogle(listener: () => void) {listeners.add(listener); 
 function update(patch: Partial<GoogleState>) {state = {...state, ...patch, revision: state.revision + 1}; listeners.forEach(fn => fn());}
 function clearSession(phase: GoogleState['phase'], error = '') {
   generation++; token = undefined; clearTimeout(expiry);
-  update({phase, email: '', services: emptyServices(), error});
+  update({phase, email: '', owner: '', workspace: false, services: emptyServices(), error});
 }
 export function prepareGoogle() {
   if (preparation) return preparation;
@@ -68,7 +69,7 @@ export function connectGoogle(permission: GooglePermission = 'all'): Promise<voi
   if (pending) return Promise.reject(new Error('Selesaikan jendela Google yang sudah terbuka.'));
   pending = true;
   const run = ++generation;
-  const requested = permission === 'all' ? [scope.drive, scope.sheets, scope.calendar] : [scope[permission]];
+  const requested = permission === 'all' ? [scope.workspace, scope.drive, scope.sheets, scope.calendar] : [scope[permission]];
   update({phase: 'connecting', error: ''});
   return new Promise<void>((resolve, reject) => {
     let done = false;
@@ -99,6 +100,7 @@ export function connectGoogle(permission: GooglePermission = 'all'): Promise<voi
             const profile = await profileResponse.json() as {sub?: unknown; email?: unknown};
             if (typeof profile.sub !== 'string' || !profile.sub || typeof profile.email !== 'string') throw new Error('Izinkan akses identitas akun untuk menghubungkan Google.');
             if (done || run !== generation) return;
+            if (token && token.owner !== profile.sub) throw new Error('Akun berbeda. Keluar terlebih dahulu untuk beralih akun.');
             const granted = new Set((response.scope || '').split(' '));
             const services = {
               drive: granted.has(scope.drive), sheets: granted.has(scope.sheets),
@@ -108,7 +110,7 @@ export function connectGoogle(permission: GooglePermission = 'all'): Promise<voi
             clearTimeout(expiry);
             expiry = setTimeout(() => clearSession('expired', 'Sesi Google berakhir. Klik Connect Google untuk melanjutkan.'), Math.min(2147483647, token.expires - Date.now()));
             const missing = requested.some(s => !granted.has(s) && !(s === scope.calendar && granted.has(scope.calendarWrite)));
-            update({phase: 'connected', email: profile.email, services, error: missing ? 'Sebagian izin belum diberikan. Hubungkan layanan yang ingin lu pakai.' : ''});
+            update({phase: 'connected', email: profile.email, owner: profile.sub, workspace: granted.has(scope.workspace), services, error: missing ? 'Sebagian izin belum diberikan. Hubungkan layanan yang ingin lu pakai.' : ''});
             done = true; clearTimeout(timer); pending = false; resolve();
           } catch (error) {fail((error as Error).message);}
         },
@@ -137,7 +139,12 @@ export async function disconnectGoogle() {
   finally {pending = false; update({phase: 'ready'});}
 }
 
-export function googleSession(permission: GoogleService | 'calendarWrite') {
+export function signOutGoogle() {
+  if (pending) throw new Error('Selesaikan jendela Google terlebih dahulu.');
+  clearSession('ready');
+}
+
+export function googleSession(permission: GoogleService | 'calendarWrite' | 'workspace') {
   if (!token || token.expires <= Date.now()) {
     if (token) clearSession('expired');
     throw new Error('Klik Connect Google untuk melanjutkan.');

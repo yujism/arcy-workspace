@@ -29,7 +29,7 @@ export default function GoogleConnections({state,connect,disconnect,browse,sync,
       </div>
       {state.phase==='setup'&&<p className="google-setup" role="status">Koneksi belum aktif: pendaftaran Arcy ke Google perlu diselesaikan sekali oleh pemilik aplikasi. Setelah aktif, lu cukup klik Connect Google tanpa mengisi kredensial.</p>}
       {state.error&&<p className="google-setup" role="status">{state.error}</p>}
-      <p className="google-footnote">Google meminta izin lewat jendelanya sendiri. Arcy tidak meminta password Google. Snapshot impor tetap tersimpan di browser ini setelah Disconnect. Hubungkan lagi setelah menutup atau memuat ulang halaman. <a href="https://myaccount.google.com/connections" target="_blank" rel="noreferrer">Kelola akses di Google</a></p>
+      <p className="google-footnote">Google meminta izin lewat jendelanya sendiri. Arcy tidak meminta password Google. Isi workspace tersimpan di Google Drive akun lu. Disconnect mencabut akses dan menutup workspace; data di Drive tetap ada. Login lagi setelah memuat ulang halaman. <a href="https://myaccount.google.com/connections" target="_blank" rel="noreferrer">Kelola akses di Google</a></p>
     </section>
     <div className="connection-grid">{services.map(service=>{
       const hasAccess=state.services[service.key];
@@ -41,3 +41,4 @@ export default function GoogleConnections({state,connect,disconnect,browse,sync,
     })}</div>
   </>;
 }
+
