@@ -123,7 +123,7 @@ Google authorization is separate from ChatGPT's connectors. Arcy does not automa
 
 ## Getting started
 
-1. Open the [live app](https://yujism.github.io/arcy-workspace/docs/).
+1. Open the [live app](arcy-workspace.vercel.app/).
 2. Sign in with Google and allow app-data storage. For a new deployment, complete [Google setup](GOOGLE_SETUP.md) first.
 3. Add a task or note to populate Home.
 4. Open Connections and authorize Drive, Sheets, or Calendar as needed.
