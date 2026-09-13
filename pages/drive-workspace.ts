@@ -36,11 +36,11 @@ export class DriveWorkspace {
   private update(patch:Partial<SyncState>) {this.state={...this.state,...patch};this.listeners.forEach(fn=>fn());}
   close() {this.alive=false;this.items.clear();this.operations.clear();this.listeners.clear();}
   private session() {
-    if(!this.alive)throw new Error('Workspace sudah ditutup. Masuk lagi.');
+    if(!this.alive)throw new Error('Workspace closed. Sign in again.');
     const session=this.sessionProvider();
-    if(session.owner!==this.owner)throw new Error('Akun berubah. Buka workspace akun yang aktif.');
+    if(session.owner!==this.owner)throw new Error('Account changed. Open the active account workspace.');
     const original=session.assertCurrent;
-    return {...session,assertCurrent:()=>{original();if(!this.alive)throw new Error('Workspace sudah ditutup.');}};
+    return {...session,assertCurrent:()=>{original();if(!this.alive)throw new Error('Workspace closed.');}};
   }
   private serial<T>(work:()=>Promise<T>):Promise<T> {
     const next=this.queue.then(work,work);this.queue=next.catch(()=>{});return next;
@@ -56,9 +56,9 @@ export class DriveWorkspace {
   }
   private async readOperation(response:Response) {
     const text=await response.text();
-    if(new TextEncoder().encode(text).length>MAX_BYTES)throw new Error('Data sinkronisasi terlalu besar. Workspace sebelumnya dipertahankan.');
+    if(new TextEncoder().encode(text).length>MAX_BYTES)throw new Error('Sync data is too large. Your previous workspace is preserved.');
     const op=operationSchema.parse(JSON.parse(text));
-    if(op.owner!==this.owner||op.changes.some(c=>c.value&&c.id!==c.value.id))throw new Error('Data workspace tidak sesuai akun atau format.');
+    if(op.owner!==this.owner||op.changes.some(c=>c.value&&c.id!==c.value.id))throw new Error('Workspace data has an invalid account or format.');
     return op;
   }
   private async pull(session:Session) {
@@ -68,21 +68,21 @@ export class DriveWorkspace {
       const params=new URLSearchParams({spaces:'appDataFolder',q:`trashed=false and appProperties has { key='arcyFormat' and value='${MARKER}' }`,pageSize:'1000',fields:'nextPageToken,incompleteSearch,files(id,size)'});
       if(pageToken)params.set('pageToken',pageToken);
       const page=z.object({files:z.array(z.object({id:z.string(),size:z.string().optional()})),nextPageToken:z.string().optional(),incompleteSearch:z.boolean().optional()}).parse(await (await session.request(FILES+'?'+params)).json());
-      if(!Array.isArray(page.files)||page.incompleteSearch)throw new Error('Google belum mengirim workspace lengkap. Coba sinkronkan lagi.');
+      if(!Array.isArray(page.files)||page.incompleteSearch)throw new Error('Google returned an incomplete workspace. Try syncing again.');
       count+=page.files.length;
-      if(count>20000)throw new Error('Riwayat workspace melebihi kapasitas versi ini. Ekspor backup sebelum melanjutkan.');
+      if(count>20000)throw new Error('Workspace history exceeds this version’s capacity. Your data is preserved; contact the app owner.');
       // A bounded batch limits simultaneous Drive requests. Commit only after all pages.
       const missing=page.files.filter((file:{id:string})=>!next.has(file.id));
       for(let i=0;i<missing.length;i+=5) {
         const batch=await Promise.all(missing.slice(i,i+5).map(async(file:{id:string;size?:string})=>{
-          if(!/^[\w-]+$/.test(file.id)||Number(file.size)>MAX_BYTES)throw new Error('File sinkronisasi tidak valid atau terlalu besar.');
+          if(!/^[\w-]+$/.test(file.id)||Number(file.size)>MAX_BYTES)throw new Error('Sync file is invalid or too large.');
           const op=await this.readOperation(await session.request(FILES+'/'+file.id+'?alt=media'));
           session.assertCurrent();return [file.id,op] as const;
         }));
         for(const [id,op] of batch)next.set(id,op);
       }
       pageToken=page.nextPageToken||'';
-      if(pageToken&&seenTokens.has(pageToken))throw new Error('Pagination Google berulang. Coba lagi.');
+      if(pageToken&&seenTokens.has(pageToken))throw new Error('Google returned a repeated page. Try again.');
       seenTokens.add(pageToken);
     }while(pageToken);
     session.assertCurrent();
@@ -98,10 +98,10 @@ export class DriveWorkspace {
     const response=await session.request(UPLOAD,{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body});
     if(response.status===409) {
       const saved=await this.readOperation(await session.request(FILES+'/'+fileId+'?alt=media'));
-      if(JSON.stringify(saved)!==JSON.stringify(operation))throw new Error('Konflik ID penyimpanan. Workspace belum diubah.');
+      if(JSON.stringify(saved)!==JSON.stringify(operation))throw new Error('Storage ID conflict. Your workspace has not changed.');
     }else {
       const saved=z.object({id:z.string()}).parse(await response.json());
-      if(saved.id!==fileId)throw new Error('Penyimpanan Google belum terkonfirmasi. Klik Sinkronkan.');
+      if(saved.id!==fileId)throw new Error('Google has not confirmed saving. Select Sync now.');
     }
     session.assertCurrent();
     this.operations.set(fileId,operation);
@@ -123,19 +123,19 @@ export class DriveWorkspace {
       this.update({phase:'syncing',error:'',writing:true});
       if(this.pending) {
         await this.upload(session,this.pending);await this.pull(session);
-        throw new Error('Penyimpanan sebelumnya sudah dipulihkan. Periksa hasilnya sebelum menyimpan perubahan baru.');
+        throw new Error('The previous save was recovered. Review it before saving new changes.');
       }
       await this.pull(session);assertSource();
       const changes=build(this.records());
       if(!changes.length){this.update({phase:'ready'});return;}
       const projected=new Set(this.items.keys());
       for(const c of changes){if(c.value)projected.add(c.id);else projected.delete(c.id);}
-      if(projected.size>MAX_RECORDS)throw new Error('Batas 5.000 item tercapai. Data sebelumnya tetap ada.');
-      if(this.operations.size>=20000)throw new Error('Riwayat workspace penuh. Ekspor backup sebelum melanjutkan.');
+      if(projected.size>MAX_RECORDS)throw new Error('The 5,000-item limit has been reached. Your existing data is preserved.');
+      if(this.operations.size>=20000)throw new Error('Workspace history is full. Your data is preserved; contact the app owner.');
       const operation=operationSchema.parse({format:MARKER,owner:this.owner,id:crypto.randomUUID(),clock:this.clock+1,changes});
-      if(new TextEncoder().encode(JSON.stringify(operation)).length>MAX_BYTES)throw new Error('Perubahan terlalu besar. Impor bagian yang lebih kecil (maksimal 4 MB per penyimpanan).');
+      if(new TextEncoder().encode(JSON.stringify(operation)).length>MAX_BYTES)throw new Error('Changes are too large. Import smaller sections, up to 4 MB per save.');
       const generated=z.object({ids:z.array(z.string())}).parse(await (await session.request(FILES+'/generateIds?count=1&space=appDataFolder&type=files')).json());
-      const fileId=generated.ids?.[0];if(typeof fileId!=='string'||!/^[\w-]+$/.test(fileId))throw new Error('Google belum menyediakan ID penyimpanan. Coba lagi.');
+      const fileId=generated.ids?.[0];if(typeof fileId!=='string'||!/^[\w-]+$/.test(fileId))throw new Error('Google did not provide a storage ID. Try again.');
       session.assertCurrent();assertSource();
       this.pending={fileId,operation};
       await this.upload(session,this.pending);
@@ -148,6 +148,6 @@ export class DriveWorkspace {
 let active:DriveWorkspace|undefined;
 export function activateWorkspace(workspace?:DriveWorkspace) {active=workspace;}
 export function workspaceStorage() {
-  if(!active)throw new Error('Masuk dengan Google untuk membuka workspace.');
+  if(!active)throw new Error('Sign in with Google to open your workspace.');
   active.records();return active;
 }

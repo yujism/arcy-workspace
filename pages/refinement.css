@@ -1,0 +1,41 @@
+/* Taste redesign: restrained green accent, quiet surfaces, consistent 12/8px radii. */
+:root{--sidebar:#f0f4f1;--sidebar-foreground:#294338;--sidebar-accent:#e0eae3;--sidebar-accent-foreground:#173e2c;--sidebar-border:#dce5de}
+body{font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+.arcy-sidebar [data-slot=sidebar-inner]{background:var(--sidebar);color:var(--sidebar-foreground);border-right:1px solid var(--sidebar-border)}
+.arcy-sidebar [data-slot=sidebar-header]{padding:24px 20px 20px}
+.brand{color:var(--sidebar-foreground);margin-bottom:22px}.brand-dot{color:#367457}
+.workspace-switch{background:transparent;border-color:var(--sidebar-border);color:var(--sidebar-foreground)}
+.workspace-switch small,.nav-label,.profile small{color:#60776a}
+.source-nav,.nav-item{color:var(--sidebar-foreground)}
+.nav-item[data-active=true]{background:var(--sidebar-accent)!important;color:var(--sidebar-accent-foreground)!important}
+.source-nav:hover,.nav-item:hover{background:var(--sidebar-accent);color:var(--sidebar-accent-foreground)}
+.sidebar-divider{background:var(--sidebar-border);margin:20px 11px}.sidebar-note{display:none}
+.profile{border-color:var(--sidebar-border);padding:16px 8px 10px;margin-top:4px}.profile>div{overflow:hidden;text-overflow:ellipsis}
+.breadcrumb [data-slot=sidebar-trigger]{display:inline-flex;width:34px;height:34px}
+.topbar{height:64px;min-height:64px;padding:0 32px;background:var(--background)}
+.main{max-width:1440px;padding:32px 36px 20px}.page-heading{margin-bottom:28px}
+.page-heading h1{font-size:32px;letter-spacing:-1.15px}.page-heading p{line-height:1.6}
+.ask-card{background:#edf4ef;border:1px solid #dce8df;border-radius:12px;box-shadow:none}
+.panel,.note-card,.connection-card,.note-preview{border-radius:12px;box-shadow:none}
+.composer,.primary,.secondary,.search-box{border-radius:8px}
+.stats>button{background:transparent;border:0;border-right:1px solid var(--border);border-radius:0;box-shadow:none;padding:16px 18px}
+.stats>button:last-child{border-right:0}.stats{gap:0;border-bottom:1px solid var(--border);padding-bottom:14px}
+.connection-callout{background:transparent;border:1px solid var(--border);border-radius:12px}
+.account-controls{display:grid;gap:4px;border-bottom:1px solid var(--sidebar-border);padding:10px 0 14px;margin-bottom:10px;color:var(--sidebar-foreground)}
+.account-controls>button{display:flex;justify-content:flex-start;align-items:center;gap:12px;width:100%;padding:10px 13px;min-height:40px;border:0;border-radius:8px;font-size:14px;text-align:left;color:inherit;background:transparent}
+.account-controls>button:hover{background:var(--sidebar-accent)}
+.account-controls>button:disabled{cursor:not-allowed;opacity:.5}
+.account-sync{display:flex;align-items:center;gap:9px;padding:5px 13px 11px;font-size:12px;color:#526d5d;line-height:1.5}.account-sync svg{flex-shrink:0}
+.pages-loading .account-controls{width:240px}
+.pages-start{background:#f5f8f6}.pages-start-card{border-radius:16px;box-shadow:0 12px 48px #19352908}
+.pages-start h1{max-width:480px;font-weight:600;letter-spacing:-1.2px;line-height:1.2}
+button{transition:background-color .15s ease,color .15s ease,transform .15s ease}button:active:not(:disabled){transform:translateY(1px)}
+html[data-theme=dark]{--sidebar:#151f19;--sidebar-foreground:#d5e4da;--sidebar-accent:#293d30;--sidebar-accent-foreground:#ccefd9;--sidebar-border:#32473a}
+html[data-theme=dark] .ask-card{background:#1b2c21;border-color:#354d3d}
+html[data-theme=dark] :is(.workspace-switch small,.nav-label,.profile small,.account-sync){color:#aac1b0}
+html[data-theme=dark] .stats>button{background:transparent;border-color:var(--border)}
+html[data-theme=dark] .connection-callout{background:transparent}
+@media(max-width:1100px){.main{padding:28px 24px}.topbar{padding:0 24px}}
+@media(max-width:767px){.main{padding:24px 18px}.topbar{padding:0 18px}.page-heading h1{font-size:28px}.arcy-sidebar [data-slot=sidebar-header]{padding-top:25px}.account-controls>button{min-height:44px}}
+@media(max-width:500px){.stats>button{border-right:0}.private-label{display:none}.page-heading{align-items:flex-start}.pages-start-foot{align-items:flex-start}.pages-start-foot svg{flex-shrink:0;margin-top:4px}}
+@media(prefers-reduced-motion:reduce){button{transition:none}button:active:not(:disabled){transform:none}}

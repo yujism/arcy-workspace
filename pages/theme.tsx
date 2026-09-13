@@ -13,5 +13,5 @@ const subscribe=(fn:()=>void)=>{listeners.add(fn);return ()=>{listeners.delete(f
 export default function ThemeToggle(){
  const current=useSyncExternalStore(subscribe,()=>theme,()=>theme);
  const dark=current==='dark';
- return <button className="theme-toggle" type="button" aria-label="Dark mode" aria-pressed={dark} title={dark?'Ganti ke light mode':'Ganti ke dark mode'} onClick={()=>{const next=dark?'light':'dark';try{localStorage.setItem(key,next);}catch{/* Theme still works when browser storage is blocked. */}apply(next);}}>{dark?<Sun size={16}/>:<Moon size={16}/>}<span>{dark?'Light mode':'Dark mode'}</span></button>;
+ return <button className="theme-toggle" type="button" aria-label="Dark mode" aria-pressed={dark} title={dark?'Switch to light mode':'Switch to dark mode'} onClick={()=>{const next=dark?'light':'dark';try{localStorage.setItem(key,next);}catch{/* Theme still works when browser storage is blocked. */}apply(next);}}>{dark?<Sun size={16}/>:<Moon size={16}/>}<span>{dark?'Light mode':'Dark mode'}</span></button>;
 }

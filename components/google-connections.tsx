@@ -13,23 +13,23 @@ export default function GoogleConnections({state,connect,disconnect,browse,sync,
   const connected = state.phase === 'connected';
   const run = (operation:()=>Promise<void>) => {operation().catch(e=>toast.error(e.message));};
   const services: {key:GoogleService;name:string;letter:string;cls:string;description:string;action:string;open:()=>void}[] = [
-    {key:'drive',name:'Google Drive',letter:'D',cls:'drive',description:'Cari Google Docs dan impor dokumen pilihan ke Knowledge.',action:'Browse documents',open:browse},
-    {key:'sheets',name:'Google Sheets',letter:'S',cls:'sheets',description:'Baca range spreadsheet. Data spreadsheet asli tetap sama.',action:'Import a range',open:browse},
-    {key:'calendar',name:'Google Calendar',letter:'C',cls:'cal',description:'Ambil agenda kalender utama: 30 hari lalu hingga 6 bulan ke depan.',action:'Sync calendar',open:sync},
+    {key:'drive',name:'Google Drive',letter:'D',cls:'drive',description:'Find Google Docs and import selected documents into Knowledge.',action:'Browse documents',open:browse},
+    {key:'sheets',name:'Google Sheets',letter:'S',cls:'sheets',description:'Read a spreadsheet range without changing the original data.',action:'Import a range',open:browse},
+    {key:'calendar',name:'Google Calendar',letter:'C',cls:'cal',description:'Import primary calendar events from the past 30 days through the next 6 months.',action:'Sync calendar',open:sync},
   ];
   return <>
-    <section className="panel google-account" aria-label="Koneksi akun Google">
-      <div><h2>{connected?'Google terhubung':'Connect Google'}</h2><p>{connected?state.email:'Pilih akun Google, lalu izinkan layanan yang mau lu pakai.'}</p></div>
+    <section className="panel google-account" aria-label="Google account connection">
+      <div><h2>{connected?'Google connected':'Connect Google'}</h2><p>{connected?state.email:'Choose a Google account and authorize the services you want to use.'}</p></div>
       <div className="button-group">
         <button className="primary" disabled={!available} onClick={()=>run(()=>connect('all'))}>
           {working?<LoaderCircle size={17} className="spin"/>:<Plug size={17}/>}
-          {state.phase==='connecting'?'Menghubungkan…':state.phase==='loading'?'Menyiapkan…':connected?'Kelola izin Google':'Connect Google'}
+          {state.phase==='connecting'?'Connecting…':state.phase==='loading'?'Preparing…':connected?'Manage Google permissions':'Connect Google'}
         </button>
         {connected&&<button className="secondary" disabled={working} onClick={()=>run(disconnect)}><Unplug size={16}/>Disconnect</button>}
       </div>
-      {state.phase==='setup'&&<p className="google-setup" role="status">Koneksi belum aktif: pendaftaran Arcy ke Google perlu diselesaikan sekali oleh pemilik aplikasi. Setelah aktif, lu cukup klik Connect Google tanpa mengisi kredensial.</p>}
+      {state.phase==='setup'&&<p className="google-setup" role="status">Google setup must be completed by the app owner. Once ready, select Connect Google to authorize access.</p>}
       {state.error&&<p className="google-setup" role="status">{state.error}</p>}
-      <p className="google-footnote">Google meminta izin lewat jendelanya sendiri. Arcy tidak meminta password Google. Isi workspace tersimpan di Google Drive akun lu. Disconnect mencabut akses dan menutup workspace; data di Drive tetap ada. Login lagi setelah memuat ulang halaman. <a href="https://myaccount.google.com/connections" target="_blank" rel="noreferrer">Kelola akses di Google</a></p>
+      <p className="google-footnote">Google handles authorization. Arcy never asks for your Google password. Your workspace is saved in Google Drive. Disconnect revokes access and closes the workspace, keeping your Drive data. Reload the page to sign in again. <a href="https://myaccount.google.com/connections" target="_blank" rel="noreferrer">Manage access in Google</a></p>
     </section>
     <div className="connection-grid">{services.map(service=>{
       const hasAccess=state.services[service.key];
