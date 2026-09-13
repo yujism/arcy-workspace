@@ -48,7 +48,7 @@ try{
  await Promise.all([a.mutate(()=>[{id:'two',value:item('two','A')}]),b.mutate(()=>[{id:'two',value:item('two','B')}])]);
  await Promise.all([a.refresh(),b.refresh()]);assert.deepEqual(a.records(),b.records(),'concurrent edits converge deterministically');
  await other.refresh();assert.equal(other.records().length,0,'account isolation');
- const wrong=new DriveWorkspace('a',()=>session('b'));await assert.rejects(wrong.refresh(),/Akun berubah/);
+ const wrong=new DriveWorkspace('a',()=>session('b'));await assert.rejects(wrong.refresh(),/Account changed/);
  const before=a.records();failList=true;await assert.rejects(a.refresh(),/List failed/);assert.deepEqual(a.records(),before);failList=false;
  failUpload=true;await assert.rejects(a.mutate(()=>[{id:'retry',value:item('retry')}]),/Network failed/);assert.equal(a.records().some(r=>r.id==='retry'),false);failUpload=false;
  await a.refresh();assert.equal(a.records().some(r=>r.id==='retry'),true);
@@ -56,10 +56,10 @@ try{
  await a.refresh();assert.equal(files.size,count,'lost response retries same ID');assert.equal(a.records().filter(r=>r.id==='ambiguous').length,1);
  activateWorkspace(a);const current=a.records().find(r=>r.id==='two');
  await localApi('/api/workspace',{...current,expectedUpdated:current.updated,title:'Fresh'});
- await assert.rejects(localApi('/api/workspace',{...current,expectedUpdated:current.updated,title:'Stale'}),/berubah di browser lain/);
- await assert.rejects(localApi('/api/workspace',{id:current.id,expectedUpdated:current.updated},'DELETE'),/berubah di browser lain/);
+ await assert.rejects(localApi('/api/workspace',{...current,expectedUpdated:current.updated,title:'Stale'}),/changed in another browser/);
+ await assert.rejects(localApi('/api/workspace',{id:current.id,expectedUpdated:current.updated},'DELETE'),/changed in another browser/);
  const fresh=new DriveWorkspace('a',()=>session('a'));await fresh.refresh();assert.deepEqual(fresh.records(),a.records(),'fresh browser restores from Drive only');
  const max=seq;await assert.rejects(a.mutate(()=>[{id:'bad',value:{...item('bad'),kind:'bad'}}]));assert.equal(seq,max);
- a.close();assert.throws(()=>a.records(),/ditutup/);
+ a.close();assert.throws(()=>a.records(),/closed/);
  console.log('PASS: account isolation, fresh-browser restore, pagination, concurrent writes, deterministic conflict merge, deletion tombstones, failed reads/writes, ambiguous upload retry without duplicates, stale-edit rejection, schema validation and closed-session guards. Drive is mocked.');
 }finally{activateWorkspace();rmSync(dir,{recursive:true,force:true});}

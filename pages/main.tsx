@@ -60,7 +60,7 @@ function AccountWorkspace({owner}:{owner:string}){
  const syncText=sync.phase==='loading'?'Loading workspace…':sync.phase==='syncing'?'Syncing…':sync.phase==='error'?'Sync failed':'Saved to Google Drive';
  const accountControls=<div className="account-controls"><div className="account-sync"><Cloud size={15}/><span role="status">{syncText}</span></div><ThemeToggle/>
   <button disabled={blocked||sync.phase==='syncing'} onClick={()=>storage.refresh().then(()=>setReady(true)).catch(()=>{})}><RefreshCw size={16} className={sync.phase==='syncing'?'spin':''}/>Sync now</button>
-  <button disabled={blocked} onClick={()=>{try{signOutGoogle();}catch(e){setStatus((e as Error).message);}}}><LogOut size={16}/>Sign out</button>
+  <button disabled={blocked} onClick={async()=>{setBusy(true);try{await signOutGoogle();}catch(e){setStatus((e as Error).message);}finally{setBusy(false);}}}><LogOut size={16}/>Sign out</button>
  </div>;
  return <>
  {(status||sync.error)&&<div className="pages-status" role="alert">{status||sync.error}{status&&<button aria-label="Dismiss notification" onClick={()=>setStatus('')}>×</button>}</div>}

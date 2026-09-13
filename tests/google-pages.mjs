@@ -45,22 +45,22 @@ async function authorize(permission='all',granted=readScopes){
 }
 try{
   await unconfigured.prepareGoogle();assert.equal(unconfigured.googleSnapshot().phase,'setup');
-  await assert.rejects(unconfigured.connectGoogle(),/Pendaftaran/);
+  await assert.rejects(unconfigured.connectGoogle(),/registration/);
   await auth.prepareGoogle();assert.equal(auth.googleSnapshot().phase,'ready');
-  const cancelled=auth.connectGoogle();const cancelledCheck=assert.rejects(cancelled,/dibatalkan/);
+  const cancelled=auth.connectGoogle();const cancelledCheck=assert.rejects(cancelled,/canceled/);
   oauthOptions.error_callback({type:'popup_closed'});await cancelledCheck;
   assert.equal(auth.googleSnapshot().phase,'ready');assert.equal(auth.googleSnapshot().services.drive,false);
-  const denied=auth.connectGoogle();const deniedCheck=assert.rejects(denied,/belum diberikan/);
+  const denied=auth.connectGoogle();const deniedCheck=assert.rejects(denied,/not granted/);
   await oauthOptions.callback({error:'access_denied'});await deniedCheck;
   await authorize('all',[readScopes[0]]);
   assert.deepEqual(auth.googleSnapshot().services,{drive:true,sheets:false,calendar:false});
-  assert.throws(()=>auth.googleSession('sheets'),/Hubungkan layanan/);
-  assert.throws(()=>auth.googleSession('calendarWrite'),/Izinkan pengiriman/);
+  assert.throws(()=>auth.googleSession('sheets'),/Connect this service/);
+  assert.throws(()=>auth.googleSession('calendarWrite'),/Allow event creation/);
   assert.equal(requested.prompt,'select_account');
   await authorize();assert.equal(requested.hint,account.sub);
   assert.ok(!oauthOptions.scope.split(' ').includes('https://www.googleapis.com/auth/calendar.events'),'initial connect must be read-only');
   assert.equal(JSON.stringify(auth.googleSnapshot()).includes('test-memory-only'),false);
-  await assert.rejects(auth.googleSession('drive').request('https://attacker.test/'),/Tujuan API/);
+  await assert.rejects(auth.googleSession('drive').request('https://attacker.test/'),/Invalid Google API/);
 
   responseHandler=async(url,options)=>{
     assert.equal(options.headers.Authorization,'Bearer test-memory-only');
@@ -71,7 +71,7 @@ try{
   await pagesApi('/api/google',{action:'import',id:'doc1'});
   assert.equal(storage.records.length,1,'reimport updates same record');
   account.sub='account-b';
-  const switched=auth.connectGoogle();const rejectSwitch=assert.rejects(switched,/Akun berbeda/);
+  const switched=auth.connectGoogle();const rejectSwitch=assert.rejects(switched,/Different account/);
   await oauthOptions.callback({access_token:'other-token',expires_in:3600,scope:readScopes.join(' ')});await rejectSwitch;
   assert.equal(auth.googleSnapshot().owner,'account-a');
   auth.signOutGoogle();await authorize();
@@ -82,7 +82,7 @@ try{
   const imported=await pagesApi('/api/google',{action:'sheets',id:'https://docs.google.com/spreadsheets/d/sheet123/edit',range:"'Planning'!A1:B2"});
   assert.equal(imported.item.body,'Article\tQty\nE1001\t12');
   assert.ok(sheetCalls[0].includes(encodeURIComponent("'Planning'!A1:B2")));
-  await assert.rejects(pagesApi('/api/google',{action:'sheets',id:'https://attacker.test/sheet',range:'A1'}),/ID Google/);
+  await assert.rejects(pagesApi('/api/google',{action:'sheets',id:'https://attacker.test/sheet',range:'A1'}),/Invalid Google ID/);
   await storage.localApi('/api/workspace',{id:'old-event',kind:'event',title:'Old',meta:{googleAccount:account.sub,source:'Google Calendar'}});
   let page=0;
   const event={id:'event1',summary:'Review',start:{dateTime:'2026-09-11T09:00:00+07:00'},end:{dateTime:'2026-09-11T10:00:00+07:00'}};
@@ -110,14 +110,14 @@ try{
   let release;
   responseHandler=async()=>new Promise(resolve=>{release=resolve;});
   const outstanding=pagesApi('/api/google',{action:'import',id:'stale'});
-  const staleCheck=assert.rejects(outstanding,/Sesi Google berubah/);
+  const staleCheck=assert.rejects(outstanding,/session changed/);
   await auth.disconnectGoogle();
   release(Response.json({name:'Stale',mimeType:'application/vnd.google-apps.document'}));
   await staleCheck;
   assert.equal(storage.records.some(r=>r.title==='Stale'),false);
   assert.equal(auth.googleSnapshot().phase,'ready');
   await authorize();responseHandler=async()=>new Response('',{status:401});
-  await assert.rejects(pagesApi('/api/google',{action:'browse'}),/Sesi Google berakhir/);
+  await assert.rejects(pagesApi('/api/google',{action:'browse'}),/session expired/);
   assert.equal(auth.googleSnapshot().phase,'expired');assert.equal(auth.googleSnapshot().services.drive,false);
   console.log('PASS: missing registration, popup cancellation, denied/partial scopes, memory-only token state, account isolation, Docs reimport, Sheets read, paginated Calendar rollback, idempotent event creation, stale-session rejection, expired-token recovery. Google responses and storage are mocked; live consent remains unverified.');
 }finally{await auth.disconnectGoogle();globalThis.fetch=realFetch;delete globalThis.window;rmSync(temporary,{recursive:true,force:true});}

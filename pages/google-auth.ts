@@ -1,4 +1,6 @@
 import config from './google-config.json';
+declare const __ARCY_PERSISTENT_AUTH__: boolean;
+const persistent = typeof __ARCY_PERSISTENT_AUTH__ !== 'undefined' && __ARCY_PERSISTENT_AUTH__;
 
 export type GoogleService = 'drive' | 'sheets' | 'calendar';
 export type GooglePermission = GoogleService | 'calendarWrite' | 'workspace' | 'all';
@@ -39,9 +41,53 @@ function clearSession(phase: GoogleState['phase'], error = '') {
   generation++; token = undefined; clearTimeout(expiry);
   update({phase, email: '', owner: '', workspace: false, services: emptyServices(), error});
 }
+async function serverRequest(action: string) {
+  const response = await fetch('/api/auth/' + action, {method: 'POST', credentials: 'same-origin', headers: {'X-Arcy-Request': '1'}, signal: AbortSignal.timeout(45000)});
+  const data = await response.json() as {error?: string; owner: string; email: string; access_token: string; expires_in: number; scope: string; url: string};
+  if (!response.ok) throw Object.assign(new Error(data.error || 'Google connection failed.'), {status: response.status});
+  return data;
+}
+let renewal: Promise<void> | undefined;
+function restoreSession() {
+  if (renewal) return renewal;
+  const run = generation;
+  renewal = (async () => {
+    try {
+      const data = await serverRequest('session');
+      if (run !== generation) return;
+      if (!data.owner || !data.email || !data.access_token || !Number.isFinite(data.expires_in) || data.expires_in <= 60 || typeof data.scope !== 'string') throw new Error('Invalid Google session.');
+      if (token && token.owner !== data.owner) {clearSession('ready', 'Your Google account changed. Reload to continue.'); return;}
+      const renewed = {value: data.access_token, owner: data.owner, expires: Date.now() + (data.expires_in - 30) * 1000, scopes: new Set(data.scope.split(' '))};
+      // Keep in-flight workspace operations valid when renewing the same account.
+      if (token) Object.assign(token, renewed); else token = renewed;
+      clearTimeout(expiry);
+      expiry = setTimeout(() => {void restoreSession().catch(() => {});}, Math.min(2147483647, Math.max(1000, token.expires - Date.now() - 60000)));
+      update({phase: 'connected', owner: data.owner, email: data.email, workspace: token.scopes.has(scope.workspace), services: {
+        drive: token.scopes.has(scope.drive), sheets: token.scopes.has(scope.sheets), calendar: token.scopes.has(scope.calendar) || token.scopes.has(scope.calendarWrite),
+      }, error: ''});
+    } catch (error) {
+      if (run !== generation) return;
+      const failure = error as Error & {status?: number};
+      if (failure.status === 401) clearSession('ready');
+      else if (failure.status === 503) update({phase: 'setup', error: failure.message});
+      else {update({phase: token ? 'connected' : 'error', error: 'Could not restore Google session. Check your connection and reload.'}); throw error;}
+    }
+  })().finally(() => {renewal = undefined;});
+  return renewal;
+}
 export function prepareGoogle() {
   if (preparation) return preparation;
   preparation = (async () => {
+    if (persistent) {
+      await restoreSession().catch(() => {});
+      const url = new URL(location.href);
+      if (url.searchParams.has('auth_error')) {
+        const code = url.searchParams.get('auth_error');
+        url.searchParams.delete('auth_error'); history.replaceState(null, '', url);
+        update({error: code === 'canceled' ? 'Google connection canceled. Your data is preserved.' : code === 'account_changed' ? 'Different account selected. Sign out first to switch accounts.' : 'Google sign-in could not finish. Try again and allow workspace storage and offline access.'});
+      }
+      return;
+    }
     if (!/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(config.clientId)) {
       update({phase: 'setup'}); return;
     }
@@ -63,6 +109,15 @@ export function prepareGoogle() {
 
 // Called directly from a click: no awaited work before opening Google's popup.
 export function connectGoogle(permission: GooglePermission = 'all'): Promise<void> {
+  if (persistent) {
+    if (pending) return Promise.reject(new Error('Finish the Google connection first.'));
+    pending = true; update({phase: 'connecting', error: ''});
+    return serverRequest('start?permission=' + encodeURIComponent(permission)).then(data => {
+      location.assign(data.url);
+      // Navigation completes authorization; callers must not continue with old scopes.
+      return new Promise<void>(() => {});
+    }).catch(error => {pending = false; update({phase: token ? 'connected' : 'ready', error: error.message}); throw error;});
+  }
   const oauth = window.google?.accounts?.oauth2;
   if (!config.clientId) return Promise.reject(new Error('Google app registration is not complete.'));
   if (!oauth) return Promise.reject(new Error('Google sign-in is not ready. Reload the page.'));
@@ -122,6 +177,7 @@ export function connectGoogle(permission: GooglePermission = 'all'): Promise<voi
 
 export async function disconnectGoogle() {
   if (pending) throw new Error('Finish the Google window first.');
+  if (persistent) {await endServerSession('disconnect'); return;}
   const previous = token?.value;
   clearSession('ready');
   if (!previous) return;
@@ -139,13 +195,24 @@ export async function disconnectGoogle() {
   finally {pending = false; update({phase: 'ready'});}
 }
 
-export function signOutGoogle() {
+async function endServerSession(action: 'logout' | 'disconnect') {
+  pending = true; ++generation; clearTimeout(expiry);
+  try {
+    // Finish renewal first so its Set-Cookie cannot undo logout.
+    await renewal?.catch(() => {});
+    await serverRequest(action);
+    clearSession('ready');
+  } catch (error) {update({error: (error as Error).message}); throw error;}
+  finally {pending = false;}
+}
+export function signOutGoogle(): void | Promise<void> {
   if (pending) throw new Error('Finish the Google window first.');
+  if (persistent) return endServerSession('logout');
   clearSession('ready');
 }
 
 export function googleSession(permission: GoogleService | 'calendarWrite' | 'workspace') {
-  if (!token || token.expires <= Date.now()) {
+  if (!token || (!persistent && token.expires <= Date.now())) {
     if (token) clearSession('expired');
     throw new Error('Select Connect Google to continue.');
   }
@@ -153,14 +220,18 @@ export function googleSession(permission: GoogleService | 'calendarWrite' | 'wor
     throw new Error(permission === 'calendarWrite' ? 'Allow event creation in Google first.' : 'Connect this service and authorize access in Google.');
   }
   const session = token, run = generation;
-  function assertCurrent() {if (token !== session || generation !== run || session.expires <= Date.now()) throw new Error('Your Google session changed. Try again with the connected account.');}
+  function assertCurrent() {if (token !== session || generation !== run || (!persistent && session.expires <= Date.now())) throw new Error('Your Google session changed. Try again with the connected account.');}
   return {
     owner: session.owner, assertCurrent,
     async request(url: string, options: RequestInit = {}) {
       assertCurrent();
+      if (persistent && session.expires <= Date.now() + 60000) {await restoreSession(); assertCurrent();}
+      if (session.expires <= Date.now()) throw new Error('Could not renew Google access. Check your connection and retry.');
       const target = new URL(url);
       if (target.protocol !== 'https:' || !['www.googleapis.com', 'sheets.googleapis.com'].includes(target.host) || target.username || target.password) throw new Error('Invalid Google API destination.');
-      const response = await fetch(url, {...options, redirect: 'error', headers: {...options.headers, Authorization: 'Bearer ' + session.value}, signal: AbortSignal.timeout(25000)});
+      const send = () => fetch(url, {...options, redirect: 'error' as const, headers: {...options.headers, Authorization: 'Bearer ' + session.value}, signal: AbortSignal.timeout(25000)});
+      let response = await send();
+      if (persistent && response.status === 401) {await restoreSession(); assertCurrent(); response = await send();}
       assertCurrent();
       if (response.status === 401) {clearSession('expired'); throw new Error('Your Google session expired. Reconnect to continue.');}
       if (!response.ok) {

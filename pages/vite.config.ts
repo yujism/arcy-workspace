@@ -2,6 +2,7 @@ import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import {fileURLToPath} from 'node:url';
 export default defineConfig({
+ define:{__ARCY_PERSISTENT_AUTH__:JSON.stringify(process.env.ARCY_PERSISTENT_AUTH==='1')},
  root:fileURLToPath(new URL('.',import.meta.url)),
  base:'./',
  envDir:false,

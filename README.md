@@ -4,6 +4,10 @@ A personal workspace for tasks, notes, calendar events, and searchable work cont
 
 **[Open Arcy Workspace](https://yujism.github.io/arcy-workspace/docs/)** · [Google setup](GOOGLE_SETUP.md) · [Design guidelines](DESIGN.md)
 
+## Persistent sign-in on Vercel
+
+The new [Vercel deployment](https://arcy-workspace.vercel.app/) includes encrypted HttpOnly session cookies, automatic token renewal, and a rolling 30-day session. **Activation is pending the Google OAuth client secret and callback configuration**; follow [Vercel setup](VERCEL_SETUP.md). The GitHub Pages edition below keeps its existing login flow. Workspace data continues to use the same Google account and OAuth client.
+
 ## Screenshots
 
 Real captures of the deployed sign-in screen in light and dark mode. These screenshots show the public entry screen; they do not show an authenticated dashboard or private workspace data.
