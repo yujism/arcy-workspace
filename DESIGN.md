@@ -12,4 +12,4 @@ Arcy is a personal productivity application. Preserve its data flows and existin
 - Use English for interface labels, help, notifications, errors, and generated search summaries. Preserve user-authored content and imported source text.
 - Support light and dark themes, keyboard navigation, reduced motion, and mobile layouts.
 
-The separately requested “pony tail” skill was not found among available or personal skills. It has not been substituted with another skill.
+Apply `.agents/skills/ponytail/SKILL.md` in full mode for coding work. Reuse existing components, prefer native browser features, and remove unused code before adding abstractions. Preserve validation, data-loss protection, security, and accessibility. Upstream: https://github.com/DietrichGebert/ponytail (MIT).

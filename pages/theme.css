@@ -27,7 +27,6 @@ html[data-theme=dark] .priority.high{background:#442e24;color:#f3bf9e}
 html[data-theme=dark] :is(.priority.low,.sheets,.connection-status.ready){background:#244332;color:#b4e3bd}
 html[data-theme=dark] .drive{background:#483c21;color:#f1d38d}
 html[data-theme=dark] .cal{background:#283d58;color:#b9d5ff}
-html[data-theme=dark] .pages-banner{background:#162b21;border-bottom:1px solid #35483b}
 html[data-theme=dark] .google-letter{background:#fff;color:#3569c8}
 html[data-theme=dark] [data-sonner-toast]{background:#213126!important;color:#e1eae5!important;border-color:#435845!important}
 @media(max-width:650px){.pages-start{padding-top:84px}.login-theme{top:18px;right:18px}}
