@@ -19,6 +19,7 @@ Real captures of the deployed sign-in screen in light and dark mode. These scree
 ### Dark mode
 
 ![Arcy Workspace Google sign-in screen in dark mode](documentation/screenshots/sign-in-dark.jpg)
+![Arcy Workspace Homepage in dark mode](documentation/screenshots/homepage-arcy.png)
 
 ## Current development status
 
