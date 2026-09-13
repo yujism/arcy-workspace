@@ -1,69 +1,200 @@
 # Arcy Workspace
 
-## GitHub Pages edition
+A personal workspace for tasks, notes, calendar events, and searchable work context. Sign in with Google and continue with the same workspace in another browser.
 
-Static build files live in `docs/`. To publish, open repository Settings → Pages, select **Deploy from a branch**, branch **main**, folder **/docs**, then Save. The existing **main / (root)** setting also works: the root entry forwards to `docs/`. Expected project URL after GitHub reports a successful deployment: `https://yujism.github.io/arcy-workspace/`.
+**[Open Arcy Workspace](https://yujism.github.io/arcy-workspace/docs/)** · [Google setup](GOOGLE_SETUP.md) · [Design guidelines](DESIGN.md)
 
-This edition opens with **Sign in with Google**. Tasks, notes, agenda snapshots, and search history are stored in the private application-data area of the chosen Google Drive account. Opening another browser and signing into the same account restores that workspace. Mutations are confirmed by Drive before the UI reports success; an open visible tab refreshes every 30 seconds and on focus/reconnection. Internet access is required to save.
+## Screenshots
 
-Existing browser-local records are preserved and can be copied with **Pindahkan ke akun ini**, followed by an account-specific confirmation. JSON export/import remains available. Google Docs and Sheets imports remain snapshots; source-wide automatic import is not included. AI still requires a separate backend. See `GOOGLE_SETUP.md`.
+Real captures of the deployed sign-in screen in light and dark mode. These screenshots show the public entry screen; they do not show an authenticated dashboard or private workspace data.
 
-Rebuild after source changes with `pnpm install --frozen-lockfile` and `pnpm build:pages`; commit the updated `docs/` along with source. No dependencies were added for the static build. `pages/vite.config.ts` sets relative asset URLs for project Pages and excludes environment-file loading.
+### Light mode
 
-The original backend build is retained below. Hosting this repository on Pages does **not** run its API routes or D1 database.
+![Arcy Workspace Google sign-in screen in light mode](documentation/screenshots/sign-in-light.jpg)
 
-Private personal workspace built with React, Vinext (Next.js App Router compatibility), Sites Workers, and D1/SQLite. The hosted MVP deliberately uses platform-managed storage instead of the proposed external PostgreSQL/pgvector. No vector index is present.
+### Dark mode
 
-## Available immediately
+![Arcy Workspace Google sign-in screen in dark mode](documentation/screenshots/sign-in-dark.jpg)
 
-- Persistent task creation/editing/completion/deletion, due dates and priorities.
-- Notes with tags, filtering, source search, and conversion into task drafts.
-- Local calendar events in Asia/Jakarta, editing, deletion, and day navigation.
-- Stored question/answer history; keyword retrieval with explicit source references when no LLM is configured.
-- Home dashboard with open tasks, overdue count, current-day agenda and recent notes.
-- Per-user server authorization using the Sites authenticated identity; private owner-only publishing.
+## Current development status
 
-## Optional provider configuration (original Sites backend)
+The live application is the **GitHub Pages edition**. Its React frontend calls Google APIs from the browser, and saves workspace records to Google Drive's private application-data area. Google sign-in, account-based workspace storage, task and note management, calendar tools, source search, theme switching, and collapsible navigation are implemented.
 
-Set runtime secrets through Sites environment settings, never in client-side code or public files. `.env.example` lists the required names. The app does not inherit ChatGPT connector credentials.
+| Recent update | Current behavior |
+| --- | --- |
+| Google sign-in | Opens the workspace associated with the selected Google account. |
+| Cross-browser workspace | Sign into the same Google account to retrieve saved records. |
+| English interface | Pages UI labels, dialogs, notifications, and built-in search messages use English. User content stays in its original language. |
+| Cleaner navigation | Sync now, Sign out, and the theme switch live in the left sidebar. |
+| Sidebar toggle | Collapse or reopen the sidebar from the header; the desktop preference is remembered in that browser. |
+| Light and dark mode | Follows device appearance until an explicit preference is saved. Available on sign-in and inside the workspace. |
+| Backup controls | Export backup and Import backup buttons have been removed from the interface. |
+| Taste design guidance | Restrained green accents, consistent spacing and corners, and light/dark styling. |
+| Ponytail coding guidance | Full mode: reuse existing code and native features, avoid unnecessary dependencies, and remove unused code. |
 
-### AI
+## Features
 
-`OPENAI_API_KEY` and optional `OPENAI_MODEL` (default `gpt-4.1-mini`). Use the OpenAI Developers plugin API-key workflow to provision with the user's approval. Only selected source excerpts and the query are sent to the provider. Model responses cannot execute tools or writes.
+### 1. Google account and workspace sync
 
-### Google data authorization
+Choose **Sign in with Google** to authorize app-data storage and open your workspace. Tasks, notes, saved calendar records, and question/search history belong to that Google account.
 
-App sign-in stays platform-managed; this MVP does not implement app-owned Google OAuth sign-in. Bring a server-side Google OAuth client ID, client secret and refresh token for data access, bound to `GOOGLE_OWNER_USER_ID` displayed in Connections. Never paste secrets into chat or workspace notes.
+- Saves are confirmed by Google Drive before the application reports success.
+- A visible open tab refreshes every 30 seconds, and refreshes on focus or reconnection. **Sync now** requests a manual refresh.
+- Separate operation records preserve changes across browsers, including deletions. Stale edits are rejected when a newer version is detected; reopen the item before editing again.
+- **Sign out** closes the local session without deleting the workspace in Drive. **Disconnect** in Connections revokes Google access and closes the workspace; reload to sign in again.
+- If this browser contains records from the original local-storage edition, **Move to this account** offers a confirmed copy into the signed-in account. The original local data is retained; Google sources belonging to other accounts are skipped.
 
-Enable Google Drive, Sheets and Calendar APIs. Read scopes: `drive.readonly`, `spreadsheets.readonly`, `calendar.events.readonly`. Explicit Calendar publishing additionally requires `calendar.events`. The refresh token must be provisioned with offline access. See https://developers.google.com/identity/protocols/oauth2/web-server .
+This is periodic synchronization while the app is open, not realtime collaboration or an offline-first app. Internet access is required to load and save the cloud workspace.
 
-Implemented connectors after configuration:
+### 2. Home
 
-- Search Google Docs by name (30 most recent results); import/export plain text on demand; re-import refreshes the same stored source.
-- Read explicit Sheets A1 ranges through the live API, retain tab-separated snapshot and source URL. No spreadsheet writes.
-- Sync primary Calendar with pagination and incremental `nextSyncToken`; recover expired cursors with a full resync. Five pages per request; continue button handles additional pages.
-- Publish local events with explicit preview/approval. Deterministic Google event IDs avoid duplicate creation on retries. Imported Google events link back to Google for edits.
+A starting point for the day's work:
 
-## Limits
+- **Ask Arcy** composer and suggested questions.
+- Open-task count and overdue-task count.
+- Today's saved agenda and a week strip that opens a selected calendar day.
+- **Focus list** with up to four open tasks and shortcuts to add or complete tasks.
+- Recent knowledge sources and shortcuts to create notes or connect Google services.
 
-- No connected providers are claimed without configured server secrets; provider access has not been verified until an actual call succeeds.
-- No background jobs, automatic Drive-wide sync, PDF parsing, pgvector, or semantic/hybrid retrieval.
-- Google Docs/range imports limited to 100,000 characters; workspace list limited to the most recently updated 2,000 records.
-- Recurring series are linked to Google rather than expanded into daily occurrences. Calendar sync includes the primary calendar only.
-- API integration checks and compilation run locally; browser QA and credential-dependent Google/AI calls were not run.
+The dashboard summarizes records already in the workspace. Import or sync Google sources to update that context.
 
-## Checks
+### 3. Tasks
 
-`node tests/drive-workspace.mjs` — account isolation, fresh-browser restore, concurrent writes, deletion propagation, upload retry, and stale edit checks with mocked Drive.
+Create, edit, complete, reopen, and delete tasks. Each task has a title, optional notes, an optional due date, and a **High**, **Medium**, or **Low** priority.
 
-`node tests/google-pages.mjs` — mocked Google authorization and API scenarios for the Pages connector; does not prove live OAuth activation.
+Use **Open**, **Completed**, or **All** filters and text search. The Tasks page orders items by due date. Tasks can also start as drafts from a knowledge source or an Ask Arcy response, carrying relevant context into the editor.
 
+### 4. Knowledge
 
-`node node_modules/typescript/bin/tsc --noEmit`
+Keep personal notes alongside imported Google source snapshots.
 
-`node tests/api.mjs`
+- Create and edit notes with a title, content, and tag.
+- Filter by **All sources**, **My notes**, or **Google**; search titles and content.
+- Open a note to read its content, saved date, and source information.
+- Follow **Open source** to the original Google document or spreadsheet.
+- Use **Create task** to turn a source into a task draft.
+- Delete a snapshot from Arcy without deleting the original Google file.
 
-The integration checks run the real API modules against in-memory SQLite and substituted authenticated identities, covering persistence, status changes, validation, same-origin mutation checks, ownership isolation and grounded retrieval fallback.
+### 5. Ask Arcy
 
-Build and publish using the Sites skills. Database migrations are generated with Drizzle and applied by the hosting platform.
+The live Pages edition provides **keyword-based source search** across saved tasks, notes, and events. Matching titles receive more weight than body matches; brief/follow-up prompts also prioritize open tasks and today's events. Results include numbered source references that can be opened from the conversation.
 
+Questions and search responses are saved to the workspace, and **Create task** turns a response into a task draft. If no source matches, Arcy asks for more context instead of inventing an answer.
+
+**Generative AI is not enabled in the Pages edition.** The retained server implementation can produce grounded AI answers after separate deployment and secret configuration. A suggested daily-brief prompt is an on-demand search action, not a scheduled notification.
+
+### 6. Calendar
+
+View saved events by day in **Asia/Jakarta (WIB)**, use the date picker, move to the previous/next day, or return to **Today**.
+
+- Create, edit, and delete local Arcy events with a title, notes, start time, and end time.
+- Display synced Google events alongside local events, with source labels and all-day support.
+- **Sync Google** imports events from the primary Google calendar for the past 30 days through the next six months. The Pages connector requests expanded recurring occurrences for this window.
+- **Send to Google** opens a preview. **Approve & send** creates the local event in the primary Google calendar without inviting guests. Additional Calendar write permission is requested when needed.
+- Deterministic event IDs prevent duplicate creation on retries. Edit imported Google events in Google Calendar; removing an Arcy snapshot does not delete the original event.
+
+Workspace refresh and Google Calendar import are separate operations. Use the Calendar sync action to refresh imported events.
+
+### 7. Connections
+
+Authorize only the services you need, inspect their connection status, manage permissions, or disconnect Google.
+
+| Connection | What it does | How to use it |
+| --- | --- | --- |
+| Google Drive | Searches Google Docs by title and imports selected documents as plain-text snapshots. Re-importing updates the same source. | Open Connections, connect Drive, then Browse documents. |
+| Google Sheets | Reads an explicit A1 range and saves its displayed values, range, and source URL. It does not write to the spreadsheet. | Choose Import a range, enter a spreadsheet URL or ID and a range such as `'Planning'!A1:H50`. |
+| Google Calendar | Imports events from the primary calendar and can publish reviewed local events. | Connect Calendar, then use Sync calendar or the Calendar page. |
+| Arcy intelligence | Shows AI configuration status and setup information. | The live Pages build remains in source-search mode; AI requires a separately configured backend. |
+
+Google authorization is separate from ChatGPT's connectors. Arcy does not automatically inherit a connected ChatGPT account or its permissions.
+
+### 8. Appearance and navigation
+
+- **Light/Dark mode:** switch in the sign-in screen or sidebar. Explicit preferences are remembered in the browser and shared between tabs of the same origin.
+- **Collapsible sidebar:** use the header toggle or **Ctrl/Cmd+B**. On smaller screens, navigation opens as a drawer.
+- **Sidebar controls:** view sync status, refresh the workspace, switch appearance, or sign out.
+- **Responsive interface:** layouts adapt to smaller screens; reduced-motion preferences are respected.
+- **English UI:** navigation, forms, messages, and help in the live Pages edition use English. Imported documents and existing records are not automatically translated.
+
+## Getting started
+
+1. Open the [live app](https://yujism.github.io/arcy-workspace/docs/).
+2. Sign in with Google and allow app-data storage. For a new deployment, complete [Google setup](GOOGLE_SETUP.md) first.
+3. Add a task or note to populate Home.
+4. Open Connections and authorize Drive, Sheets, or Calendar as needed.
+5. Import a document or range, or sync your calendar.
+6. Ask Arcy about the saved sources. Use the same Google account in another browser to continue.
+
+## Scope and limits
+
+| Area | Current limit |
+| --- | --- |
+| Workspace | Up to 5,000 records, including saved conversations; up to 20,000 operation-history entries. |
+| Individual save | Up to 4,000,000 bytes per sync operation. |
+| Document / Sheets import | Up to 100,000 characters per imported source. |
+| Drive browsing | Up to 30 recent matching Google Docs per search. Refine the title to find other documents. |
+| Calendar import | Primary calendar only; date window above; at most 20 pages of up to 250 events per sync. |
+| Source freshness | Docs and Sheets are on-demand snapshots. Calendar imports require their own sync action. |
+| AI | Pages provides text search, not LLM answers, embeddings, semantic search, or hybrid search. |
+| Automation | No scheduled briefs, background jobs when the app is closed, or automatic Drive-wide import. |
+| File types | Google Docs and Sheets ranges are supported; PDF parsing is not implemented. |
+| Offline / collaboration | No offline save queue or shared multi-user workspace. |
+
+## Development
+
+### Stack and layout
+
+| Path | Purpose |
+| --- | --- |
+| `app/workspace.tsx` | Shared React workspace UI. |
+| `components/` | UI primitives and Google connection controls. |
+| `pages/` | GitHub Pages entry, browser Google authorization/API adapters, Drive storage, and theme styles. |
+| `docs/` | Generated production assets served by GitHub Pages. |
+| `app/api/`, `lib/`, `db/` | Retained server implementation using Vinext/Next.js-compatible routes and D1/SQLite. Not executed by Pages. |
+| `tests/` | Mocked storage, authorization, connector, and server checks. |
+| `documentation/screenshots/` | Actual public-app screenshots used by this README. |
+| `.agents/skills/`, `AGENTS.md`, `DESIGN.md` | Taste and Ponytail guidance for future development. |
+
+The Pages build uses React 19, TypeScript, Vite, Tailwind CSS 4, shadcn-style UI components, Lucide icons, and Zod validation. Google Drive supplies account-specific persistence; Pages itself only hosts static assets.
+
+### Run the Pages frontend locally
+
+Use Node.js **22.13 or later** and the pnpm version pinned in `package.json`.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm exec vite --config pages/vite.config.ts --host 127.0.0.1
+```
+
+Register the local origin in your Google OAuth configuration before testing sign-in. See [GOOGLE_SETUP.md](GOOGLE_SETUP.md). OAuth client IDs identify the application; client secrets and API keys must never be bundled into frontend code.
+
+### Build and verify
+
+```bash
+node node_modules/typescript/bin/tsc --noEmit
+pnpm build:pages
+```
+
+The build verifies that generated relative asset links resolve. Existing integration checks are available through:
+
+```bash
+node tests/drive-workspace.mjs
+node tests/google-pages.mjs
+node tests/api.mjs
+```
+
+These checks use mocked Google responses or substituted server identities and do not prove live OAuth or provider access. TypeScript and the Pages production build passed for the recent UI and Ponytail updates. This README update verifies the public sign-in screen in both themes; authenticated feature behavior is documented from the implementation, not from a fresh end-to-end login test.
+
+### Publish
+
+Commit source changes together with the rebuilt `docs/`. GitHub Pages can serve **main /docs**, or **main /(root)** using the repository's redirect to `docs/`. Confirm the Pages deployment succeeds before treating an update as live. See the [deployment history](https://github.com/yujism/arcy-workspace/actions).
+
+### Optional server edition
+
+The original server build is retained for separate hosting. It uses platform-managed authenticated identity and D1/SQLite rather than the Pages account-storage flow. Its Google connector uses server OAuth credentials, and its AI route requires `OPENAI_API_KEY` with optional `OPENAI_MODEL`. Runtime secrets belong in server configuration; see [`.env.example`](.env.example) and [Google setup](GOOGLE_SETUP.md).
+
+Deploying static assets on GitHub Pages does not activate these API routes, D1 storage, or AI responses. The legacy server path also retains older copy and connector behavior; the current English UI and browser-based Google flow described above refer to the live Pages edition.
+
+## Development principles
+
+[Taste Skill](https://github.com/Leonxlnx/taste-skill) guides relevant visual refinements. [Ponytail](https://github.com/DietrichGebert/ponytail) runs in full mode for implementation: reuse what exists, prefer native browser features, and keep the smallest working change while preserving validation, data-loss protection, security, and accessibility. Both are development instructions, not runtime AI features.
