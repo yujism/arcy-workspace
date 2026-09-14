@@ -15,7 +15,11 @@ export async function saveGoogleRecords(items:RecordItem[],assertCurrent:()=>voi
 export async function localApi(path:string,body?:any,method='POST'){
  const storage=workspaceStorage();
  if(path==='/api/workspace'){
-  if(body===undefined)return {items:storage.records(),user:{id:storage.owner,name:'Google account'},connections:{google:false,ai:false},now:new Date().toISOString()};
+  let ai=false;
+  if(body===undefined && typeof window!=='undefined' && !window.location.hostname.endsWith('github.io')){
+   try{const response=await fetch('/api/auth/ai-status',{method:'POST',credentials:'same-origin',headers:{'X-Arcy-Request':'1'},signal:AbortSignal.timeout(10000)});if(response.ok)ai=(await response.json()).configured===true;}catch{}
+  }
+  if(body===undefined)return {items:storage.records(),user:{id:storage.owner,name:'Google account'},connections:{google:false,ai},now:new Date().toISOString()};
   if(method==='DELETE'){
    if(typeof body.id!=='string')throw new Error('Invalid item.');
    await storage.mutate(records=>{
@@ -44,8 +48,16 @@ export async function localApi(path:string,body?:any,method='POST'){
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date());
   const all=storage.records();if(all.length>=MAX_RECORDS)throw new Error('The 5,000-item limit has been reached. Remove unneeded items to continue.');
   const sources=all.filter(x=>x.kind!=='message').map(x=>({x,score:terms.reduce((n:number,t:string)=>n+(x.title.toLowerCase().includes(t)?4:0)+(x.body.toLowerCase().includes(t)?1:0),0)+(brief&&((x.kind==='task'&&x.meta.status!=='done')||(x.kind==='event'&&x.meta.start&&new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date(x.meta.start))===today))?3:0)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,8).map(({x},i)=>({id:x.id,number:i+1,title:x.title,excerpt:x.body.slice(0,700),kind:x.kind,meta:x.meta}));
-  const answer=sources.length?'Found '+sources.length+' sources in your workspace. These are text search results.\n\n'+sources.map(s=>`[${s.number}] ${s.title}\n${s.excerpt||JSON.stringify(s.meta)}`).join('\n\n'):'No matching sources yet. Add notes, tasks, or Google sources, then try again.';
-  const item={id:crypto.randomUUID(),kind:'message',title:question,body:answer,meta:{sources,mode:'search'},updated:new Date().toISOString()};await storage.mutate(records=>{if(records.length>=MAX_RECORDS)throw new Error('The 5,000-item limit has been reached.');return [{id:item.id,value:item}];});return {item};
+  let mode='search';
+  let answer=sources.length?'Found '+sources.length+' sources in your workspace. These are text search results.\n\n'+sources.map(s=>`[${s.number}] ${s.title}\n${s.excerpt||JSON.stringify(s.meta)}`).join('\n\n'):'No matching sources yet. Add notes, tasks, or Google sources, then try again.';
+  if(sources.length && typeof window!=='undefined' && !window.location.hostname.endsWith('github.io')){
+   const response=await fetch('/api/auth/ai',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Arcy-Request':'1'},body:JSON.stringify({question,sources}),signal:AbortSignal.timeout(50000)});
+   const data=await response.json();
+   if(!response.ok)throw new Error(data.error||'Gemini could not answer. Try again.');
+   if(typeof data.answer!=='string'||!data.answer.trim())throw new Error('Gemini returned no answer.');
+   answer=data.answer;mode='ai';
+  }
+  const item={id:crypto.randomUUID(),kind:'message',title:question,body:answer,meta:{sources,mode},updated:new Date().toISOString()};await storage.mutate(records=>{if(records.length>=MAX_RECORDS)throw new Error('The 5,000-item limit has been reached.');return [{id:item.id,value:item}];});return {item};
  }
  throw new Error('This feature is not available yet.');
 }

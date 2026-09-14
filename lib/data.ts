@@ -1,7 +1,7 @@
 import {env} from 'cloudflare:workers';
 import {getChatGPTUser} from '@/app/chatgpt-auth';
 export type RecordItem={id:string;kind:string;title:string;body:string;meta:Record<string,any>;updated:string};
-export type Runtime={DB:D1Database;OPENAI_API_KEY?:string;OPENAI_MODEL?:string;GOOGLE_CLIENT_ID?:string;GOOGLE_CLIENT_SECRET?:string;GOOGLE_REFRESH_TOKEN?:string;GOOGLE_OWNER_USER_ID?:string};
+export type Runtime={DB:D1Database;GEMINI_API_KEY?:string;GEMINI_MODEL?:string;GOOGLE_CLIENT_ID?:string;GOOGLE_CLIENT_SECRET?:string;GOOGLE_REFRESH_TOKEN?:string;GOOGLE_OWNER_USER_ID?:string};
 export const runtime=()=>env as unknown as Runtime;
 export const db=()=>{const d=runtime().DB;if(!d)throw new Error('Penyimpanan belum tersedia. Coba lagi sebentar.');return d;};
 export async function identity(){const u=await getChatGPTUser();if(!u)throw new Error('UNAUTHORIZED');return u;}

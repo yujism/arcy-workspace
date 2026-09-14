@@ -2,13 +2,37 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "ARCY_PERSISTENT_AUTH=1 node scripts/build-pages.mjs",
+  "buildCommand": "node tests/gemini.mjs && node node_modules/typescript/bin/tsc --noEmit && ARCY_PERSISTENT_AUTH=1 node scripts/build-pages.mjs",
   "outputDirectory": "docs",
-  "functions": {"api/auth/[action].js": {"maxDuration": 60}},
-  "redirects": [{"source": "/docs/:path*", "destination": "/:path*", "permanent": false}],
-  "headers": [{"source": "/(.*)", "headers": [
-    {"key": "Referrer-Policy", "value": "no-referrer"},
-    {"key": "X-Content-Type-Options", "value": "nosniff"},
-    {"key": "X-Frame-Options", "value": "DENY"}
-  ]}]
+  "functions": {
+    "api/auth/[action].js": {
+      "maxDuration": 60
+    }
+  },
+  "redirects": [
+    {
+      "source": "/docs/:path*",
+      "destination": "/:path*",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ]
 }
