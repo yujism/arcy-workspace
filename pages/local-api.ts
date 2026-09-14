@@ -17,7 +17,7 @@ export async function localApi(path:string,body?:any,method='POST'){
  if(path==='/api/workspace'){
   let ai=false;
   if(body===undefined && typeof window!=='undefined' && !window.location.hostname.endsWith('github.io')){
-   try{const response=await fetch('/api/auth/ai-status',{method:'POST',credentials:'same-origin',headers:{'X-Arcy-Request':'1'},signal:AbortSignal.timeout(10000)});if(response.ok)ai=(await response.json()).configured===true;}catch{}
+   try{const response=await fetch('/api/auth/ai-status',{method:'POST',credentials:'same-origin',headers:{'X-Arcy-Request':'1'},signal:AbortSignal.timeout(10000)});if(response.ok)ai=((await response.json()) as {configured?:boolean}).configured===true;}catch{}
   }
   if(body===undefined)return {items:storage.records(),user:{id:storage.owner,name:'Google account'},connections:{google:false,ai},now:new Date().toISOString()};
   if(method==='DELETE'){
@@ -52,7 +52,7 @@ export async function localApi(path:string,body?:any,method='POST'){
   let answer=sources.length?'Found '+sources.length+' sources in your workspace. These are text search results.\n\n'+sources.map(s=>`[${s.number}] ${s.title}\n${s.excerpt||JSON.stringify(s.meta)}`).join('\n\n'):'No matching sources yet. Add notes, tasks, or Google sources, then try again.';
   if(sources.length && typeof window!=='undefined' && !window.location.hostname.endsWith('github.io')){
    const response=await fetch('/api/auth/ai',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Arcy-Request':'1'},body:JSON.stringify({question,sources}),signal:AbortSignal.timeout(50000)});
-   const data=await response.json();
+   const data=await response.json() as {answer?:unknown;error?:string};
    if(!response.ok)throw new Error(data.error||'Gemini could not answer. Try again.');
    if(typeof data.answer!=='string'||!data.answer.trim())throw new Error('Gemini returned no answer.');
    answer=data.answer;mode='ai';
