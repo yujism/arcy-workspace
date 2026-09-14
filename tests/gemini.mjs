@@ -13,7 +13,7 @@ const upstream=async(url,options)=>{
  assert.equal(body.contents[0].parts.length,1);
  return {ok:providerOK,status:429,json:async()=>({candidates:[{content:{parts:[{text:'Answer [1]'}]}}]})};
 };
-const names=Object.keys(crypto);
+const names=['createCipheriv','createDecipheriv','createHash','hkdfSync','randomBytes','timingSafeEqual'];
 const api=new Function(...names,'googleConfig','process','fetch',source+';return {handler,seal,settings};')(...names.map(n=>crypto[n]),{clientId:'test-client'},{env},upstream);
 const token=api.seal({owner:'test-user',exp:Date.now()+60000},'__Host-arcy-session',api.settings().key);
 async function request(headers={},body={question:'Test?',sources:[{title:'Test',excerpt:'Example'}]}){
