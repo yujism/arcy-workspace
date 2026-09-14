@@ -1,3 +1,4 @@
+import ts from 'typescript';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as crypto from 'node:crypto';
@@ -30,3 +31,23 @@ assert.equal((await request(headers)).body.answer,'Answer [1]');
 providerOK=false;
 assert.equal((await request(headers)).statusCode,429);
 console.log('PASS: origin, session, validation, Gemini response, quota handling.');
+
+const adapterSource=readFileSync(new URL('../pages/google-api.ts',import.meta.url),'utf8')
+ .replace(/^import .*;\n/gm,'').replace('export async function pagesApi','async function pagesApi');
+const adapterJS=ts.transpileModule(adapterSource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+let configured=false;
+const pagesApi=new Function('localApi','googleSnapshot',adapterJS+';return pagesApi;')(
+ async()=>({items:[],connections:{google:false,ai:configured}}),
+ ()=>({services:{drive:true,sheets:false,calendar:false}})
+);
+for(const ai of [true,false]){
+ configured=ai;
+ const result=await pagesApi('/api/workspace');
+ assert.equal(result.connections.ai,ai,'Google adapter must preserve backend AI status');
+ assert.equal(result.connections.google,true);
+ assert.equal(result.connections.sheets,false);
+}
+const workspace=readFileSync(new URL('../app/workspace.tsx',import.meta.url),'utf8');
+assert.ok(!/OPENAI_API_KEY|OpenAI API key/.test(workspace));
+assert.ok(workspace.includes('GEMINI_API_KEY'));
+console.log('PASS: Gemini status reaches the workspace and setup uses Gemini.');

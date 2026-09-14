@@ -14,7 +14,7 @@ export async function pagesApi(path: string, body?: any, method = 'POST') {
     const response = await localApi(path, body, method);
     if (path === '/api/workspace' && body === undefined) {
       const {services} = googleSnapshot();
-      return {...response, connections: {google: Object.values(services).some(Boolean), ai: false, ...services}};
+      return {...response, connections: {google: Object.values(services).some(Boolean), ai: response.connections?.ai === true, ...services}};
     }
     return response;
   }
