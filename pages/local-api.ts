@@ -29,6 +29,7 @@ export async function localApi(path:string,body?:any,method='POST'){
    });return {ok:true};
   }
   if(!['task','note','event'].includes(body.kind)||typeof body.title!=='string'||!body.title.trim()||body.title.length>250)throw new Error('Enter a valid title, up to 250 characters.');
+  if(body.kind==='task'&&!['open','in_progress','done'].includes(body.meta?.status))throw new Error('Select a valid task status.');
   if(body.kind==='event'&&(!Number.isFinite(Date.parse(body.meta?.start))||!Number.isFinite(Date.parse(body.meta?.end))||Date.parse(body.meta.end)<=Date.parse(body.meta.start)))throw new Error('The end time must be after the start time.');
   let item:RecordItem;
   const id=body.id||crypto.randomUUID();

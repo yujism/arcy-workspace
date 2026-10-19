@@ -29,4 +29,20 @@ html[data-theme=dark] .drive{background:#483c21;color:#f1d38d}
 html[data-theme=dark] .cal{background:#283d58;color:#b9d5ff}
 html[data-theme=dark] .google-letter{background:#fff;color:#3569c8}
 html[data-theme=dark] [data-sonner-toast]{background:#213126!important;color:#e1eae5!important;border-color:#435845!important}
+html[data-theme=dark] .kanban-panel{background:#18231e;border-color:#35483b}
+html[data-theme=dark] .kanban-heading p{color:#a9bcad}
+html[data-theme=dark] .kanban-column{background:#141f19;border-color:#304238}
+html[data-theme=dark] .kanban-column.over{background:#20392b;border-color:#679579}
+html[data-theme=dark] .kanban-column-icon,html[data-theme=dark] .kanban-count{background:#26372d;color:#c0d6c2}
+html[data-theme=dark] .kanban-column-icon.in_progress{background:#3b3928;color:#e0d79e}
+html[data-theme=dark] .kanban-column-icon.done{background:#244332;color:#b4e3bd}
+html[data-theme=dark] .kanban-card{background:#1d2b23;border-color:#35483b;box-shadow:none}
+html[data-theme=dark] .kanban-card:hover{border-color:#526c5a;box-shadow:0 8px 22px rgba(0,0,0,.14)}
+html[data-theme=dark] .kanban-card-main span,html[data-theme=dark] .kanban-due{color:#a9bcad}
+html[data-theme=dark] .kanban-due.overdue{color:#efad8f}
+html[data-theme=dark] .drag-handle{color:#a4b7a9}
+html[data-theme=dark] .drag-handle:hover{background:#304738;color:#e5f2e8}
+html[data-theme=dark] .kanban-empty{border-color:#3b5042;color:#829589}
+html[data-theme=dark] .kanban-loading>div{background:#141f19}
+html[data-theme=dark] .kanban-loading span{background:#26372d}
 @media(max-width:650px){.pages-start{padding-top:84px}.login-theme{top:18px;right:18px}}

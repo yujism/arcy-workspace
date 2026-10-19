@@ -31,6 +31,7 @@ const request=(body,origin='https://arcy.test',method='POST')=>new Request('http
 try{
  let res=await route.POST(request({kind:'task',title:'Review planning',meta:{status:'open',priority:'high'}}));assert.equal(res.status,200);const {item}=await res.json();
  assert.equal((await(await route.GET()).json()).items.length,1);
+ res=await route.POST(request({...item,meta:{status:'in_progress',priority:'high'}}));assert.equal(res.status,200);assert.equal((await(await route.GET()).json()).items[0].meta.status,'in_progress');
  res=await route.POST(request({...item,title:'Planning reviewed',meta:{status:'done'}}));assert.equal(res.status,200);assert.equal((await(await route.GET()).json()).items[0].meta.status,'done');
  assert.equal((await route.POST(request({...item,kind:'note'}))).status,400);
  assert.equal((await route.POST(request({kind:'task',title:''}))).status,400);
